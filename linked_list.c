@@ -1,9 +1,4 @@
-#include <stddef.h>
-
-struct list_node
-{
-    struct list_node *next;
-};
+#include "linked_list.h"
 
 int list_get_length(struct list_node **head)
 {
@@ -78,6 +73,20 @@ struct list_node *list_find(struct list_node **head, struct list_node *item)
         current_node = current_node->next;
     }
 
+    return current_node;
+}
+
+struct list_node *list_get(struct list_node **head, int index) 
+{
+    int length = list_get_length(head);
+    if (length < 1) return NULL;
+    if (length <= index) return NULL;
+    
+    struct list_node *current_node = *head;
+    for (size_t i = 0; i < index; i++)
+    {
+        current_node = current_node->next;
+    }
     return current_node;
 }
 

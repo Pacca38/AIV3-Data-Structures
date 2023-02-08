@@ -1,23 +1,4 @@
-#include "linkedLists.h"
-#include <stdlib.h>
-#include <string.h>
-#include <stdio.h>
-
-struct dictionary_node
-{
-    struct list_node node;
-    const char *key;
-    size_t key_len;
-    void *value;
-};
-
-struct dictionary
-{
-    struct dictionary_node **nodes;
-    size_t hashmap_size;
-};
-
-struct dictionary *dict_increase_hashmap_size(struct dictionary *dict, const size_t new_hashmap_size);
+#include "dict.h"
 
 size_t djb33x_hash(const char *key, const size_t keylen)
 {
@@ -50,6 +31,16 @@ void dict_print(struct dictionary *dict)
     }
 }
 
+int dict_get_count(struct dictionary *table)
+{
+    int count = 0;
+    for (size_t i = 0; i < table->hashmap_size; i++)
+    {
+        count += list_get_length((struct list_node **)&table->nodes[i]);
+    }
+    return count;
+}
+
 struct dictionary *dict_new(const size_t hashmap_size)
 {
     struct dictionary *table = (struct dictionary *)malloc(sizeof(struct dictionary));
@@ -57,8 +48,8 @@ struct dictionary *dict_new(const size_t hashmap_size)
     {
         return NULL;
     }
-    table->hashmap_size = hashmap_size ;
-    table->nodes = (struct dictionary_node **)calloc(table->hashmap_size , sizeof(struct dictionary_node *));
+    table->hashmap_size = hashmap_size;
+    table->nodes = (struct dictionary_node **)calloc(table->hashmap_size, sizeof(struct dictionary_node *));
     if (!table->nodes)
     {
         free(table);
@@ -88,6 +79,28 @@ struct dictionary_node *dict_search(struct dictionary *table, const char *key, c
     }
 
     return current_node;
+}
+
+struct dictionary_node *dict_get_from_index(dict_t *table, int index)
+{
+    int count = dict_get_count(table);
+    if (count < 1) return NULL;
+    if (count <= index) return NULL;
+
+    for (size_t i = 0; i < table->hashmap_size; i++)
+    {
+        struct list_node **head = (struct list_node **)&table->nodes[i];
+        int hashmap_count = list_get_length(head);
+        if (index < hashmap_count)
+        {
+            return (struct dictionary_node *)list_get(head, index);
+        }
+        else
+        {
+            index -= hashmap_count;
+        }
+    }
+    return NULL;
 }
 
 struct dictionary_node *dict_insert(struct dictionary **table, const char *key, const size_t key_len, void *value)
@@ -124,7 +137,7 @@ struct dictionary_node *dict_insert(struct dictionary **table, const char *key, 
     new_item->key_len = key_len;
     new_item->value = value;
 
-    struct dictionary_node *ret =  (struct dictionary_node *)list_append((struct list_node **)&head, (struct list_node *)new_item);
+    struct dictionary_node *ret = (struct dictionary_node *)list_append((struct list_node **)&head, (struct list_node *)new_item);
 
     //If collision in a given hashmap is greater than 5, then increase hashmap_size
     if (list_get_length((struct list_node **)&head) > 5)
@@ -180,4 +193,25 @@ struct dictionary *dict_increase_hashmap_size(struct dictionary *dict, const siz
     }
 
     return new_dict;
+}
+
+void dict_destroy(struct dictionary *dict)
+{
+    //Free each hashmap
+    for (size_t i = 0; i < dict->hashmap_size; i++)
+    {
+        struct dictionary_node *head = dict->nodes[i];
+        int entries = list_get_length((struct list_node **)&head);
+        for (size_t c = 0; c < entries; c++)
+        {
+            struct dictionary_node *removed = (struct dictionary_node*)list_pop((struct list_node **)&head);
+            free(removed->value);
+            free(removed);
+        }
+    }
+    
+    //Free the hashmap array
+    free(dict->nodes);
+    //Free the dictionary
+    free(dict);
 }

@@ -1,11 +1,4 @@
-#include <stddef.h>
-#include <stdlib.h>
-
-struct doubly_list_node
-{
-    struct doubly_list_node *prev;
-    struct doubly_list_node *next;
-};
+#include "dlinked_list.h"
 
 int dlist_get_length(struct doubly_list_node **head)
 {
